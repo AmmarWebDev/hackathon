@@ -1,0 +1,21 @@
+@import "tailwindcss";
+@import "tw-elements/css/tw-elements.min.css";
+
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-color);
+  line-height: 1.5;
+  font-weight: 400;
+  color: initial;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Variables */
+  --bg-color: #fff;
+}
+
+* {
+  transition: 0.3s;
+}
