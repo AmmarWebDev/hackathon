@@ -1,16 +1,9 @@
 # server_mock.py
-"""
-Mock MFA server for Digitopia challenge.
-- Uses SQLite file mfa-mock.db (created automatically if missing).
-- OTP is generated and printed to server logs (mock behavior).
-- Endpoints: /signup, /login, /verify-otp, /verify-biometric, /enable-mfa, /status, /logout
-"""
-
 import sqlite3, bcrypt, uuid, time, datetime, threading
 from flask import Flask, request, jsonify, g
 from flask_cors import CORS
 
-DB_PATH = "mfa-mock.db"
+DB_PATH = "mfa_mock.db"
 OTP_TTL_SECONDS = 180
 SESSION_TTL_SECONDS = 1800
 RATE_LIMIT_WINDOW = 60
@@ -19,7 +12,6 @@ RATE_LIMIT_MAX_ATTEMPTS = 8
 app = Flask(__name__)
 CORS(app)
 
-# ---------- DB helpers ----------
 def get_db():
     db = getattr(g, "_database", None)
     if db is None:
@@ -28,14 +20,14 @@ def get_db():
     return db
 
 def init_db():
-    db = get_db()
-    cur = db.cursor()
+    db = get_db(); cur = db.cursor()
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
         password_hash BLOB NOT NULL,
         email TEXT,
+        phone TEXT,
         mfa_enabled INTEGER DEFAULT 0,
         device_fingerprint TEXT,
         last_ip TEXT,
@@ -64,9 +56,7 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
-# ---------- rate limiting (simple in-memory) ----------
-rate_store = {}  # ip -> [timestamps]
-
+rate_store = {}
 def allow_attempt(ip):
     now = time.time()
     lst = rate_store.get(ip, [])
@@ -78,7 +68,6 @@ def allow_attempt(ip):
     rate_store[ip] = lst
     return True
 
-# ---------- utilities ----------
 def hash_password(password: str) -> bytes:
     return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
 
@@ -92,23 +81,23 @@ def iso_plus_seconds(s):
     return (datetime.datetime.utcnow() + datetime.timedelta(seconds=s)).isoformat()
 
 def gen_otp():
-    # secure-ish 6-digit OTP
     return "{:06d}".format(uuid.uuid4().int % 1000000)
 
-# ---------- endpoints ----------
+# Endpoints
 @app.route("/signup", methods=["POST"])
 def signup():
     data = request.json or {}
     username = (data.get("username") or "").strip()
     password = data.get("password") or ""
     email = (data.get("email") or "").strip()
+    phone = (data.get("phone") or "").strip()
     if not username or not password:
         return jsonify({"status":"FAIL","message":"username and password required"}), 400
     db = get_db(); cur = db.cursor()
     try:
         pw_hash = hash_password(password)
-        cur.execute("INSERT INTO users (username, password_hash, email, created_at) VALUES (?, ?, ?, ?)",
-                    (username, sqlite3.Binary(pw_hash), email if email else None, now_iso()))
+        cur.execute("INSERT INTO users (username, password_hash, email, phone, created_at) VALUES (?, ?, ?, ?, ?)",
+                    (username, sqlite3.Binary(pw_hash), email if email else None, phone if phone else None, now_iso()))
         db.commit()
         return jsonify({"status":"OK","message":"user created"}), 201
     except sqlite3.IntegrityError:
@@ -137,12 +126,10 @@ def login():
                     (user_id, otp, expires, now_iso()))
         cur.execute("UPDATE users SET last_ip = ?, device_fingerprint = ? WHERE id = ?", (ip, device_fp, user_id))
         db.commit()
-        # MOCK behavior: print OTP in server log (for demo).
         app.logger.info(f"[MOCK OTP] user={username} otp={otp} expires={expires}")
         return jsonify({"status":"OTP_SENT","message":"otp generated (check server logs for demo)"}), 200
     else:
-        token = str(uuid.uuid4())
-        expires = iso_plus_seconds(SESSION_TTL_SECONDS)
+        token = str(uuid.uuid4()); expires = iso_plus_seconds(SESSION_TTL_SECONDS)
         cur.execute("INSERT INTO sessions (token, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)",
                     (token, user_id, expires, now_iso()))
         cur.execute("UPDATE users SET last_ip = ?, device_fingerprint = ? WHERE id = ?", (ip, device_fp, user_id))
@@ -188,11 +175,9 @@ def verify_biometric():
     row = cur.fetchone()
     if not row:
         return jsonify({"status":"FAIL","message":"invalid user"}), 400
-    # Mock biometric check: frontend should send 'scan_ok' to succeed.
     if scan_pass != "scan_ok":
         return jsonify({"status":"FAIL","message":"biometric failed (mock)"}), 401
-    token = str(uuid.uuid4())
-    expires = iso_plus_seconds(SESSION_TTL_SECONDS)
+    token = str(uuid.uuid4()); expires = iso_plus_seconds(SESSION_TTL_SECONDS)
     cur.execute("INSERT INTO sessions (token, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)",
                 (token, row["id"], expires, now_iso()))
     cur.execute("UPDATE users SET last_ip = ?, device_fingerprint = ? WHERE id = ?", (ip, device_fp, row["id"]))
@@ -241,7 +226,6 @@ def logout():
     db.commit()
     return jsonify({"status":"OK","message":"logged out"}), 200
 
-# ---------- background cleanup ----------
 def cleanup_loop():
     while True:
         try:
