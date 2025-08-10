@@ -110,7 +110,7 @@ export default function App() {
                 }
               `}
               data-twe-ripple-init
-              data-twe-ripple-color="info"
+              data-twe-ripple-color="dark"
             >
               Register
             </button>
