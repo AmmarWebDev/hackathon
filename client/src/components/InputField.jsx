@@ -1,11 +1,11 @@
 export default function InputField(props) {
-  props = { type: "text", placeholder: "...", ...props };
+  props = { type: "text", placeholder: "Please fill this field", ...props };
   return (
-    <div className="input-wrapper" data-placeholder={props.placeholder}>
+    <div className="input-wrapper mb-10" data-placeholder={props.placeholder}>
       <input
-        type={props.type}
-        name={props.name}
-        autoComplete={props.autoComplete}
+        {...props}
+        placeholder=""
+        className="w-full"
       />
     </div>
   );

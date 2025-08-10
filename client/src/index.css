@@ -1,6 +1,10 @@
 @import "tailwindcss";
 @import "tw-elements/css/tw-elements.min.css";
 
+* {
+  transition: 0.3s;
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   background-color: var(--bg-color);
@@ -14,8 +18,4 @@
 
   /* Variables */
   --bg-color: #fff;
-}
-
-* {
-  transition: 0.3s;
 }

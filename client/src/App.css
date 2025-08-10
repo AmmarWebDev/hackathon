@@ -1,8 +1,8 @@
 body {
   margin: 0;
-  display: flex;
+  /* display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: center; */
   min-width: 320px;
   min-height: 100vh;
 }
@@ -19,6 +19,7 @@ body {
   pointer-events: none;
   padding: 0 3px;
   white-space: nowrap;
+  letter-spacing: 0.5px;
   /* positioning */
   position: absolute;
   left: 2px;
