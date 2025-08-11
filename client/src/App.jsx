@@ -20,14 +20,11 @@ export default function App() {
 
   const [isRegister, setIsRegister] = useState(false);
 
-  // Refs to the inner content (we'll measure these)
   const loginContentRef = useRef(null);
   const registerContentRef = useRef(null);
 
-  // wrapper height in px
   const [height, setHeight] = useState(0);
 
-  // Measure the active content's height (uses offsetHeight -> includes padding/borders)
   const measureHeight = useCallback(() => {
     const activeEl = isRegister
       ? registerContentRef.current
@@ -37,7 +34,6 @@ export default function App() {
     }
   }, [isRegister]);
 
-  // Measure on mount and when active form changes. Use rAF + timeout to be robust with layout/fonts.
   useLayoutEffect(() => {
     measureHeight();
     const rafId = requestAnimationFrame(measureHeight);
@@ -48,51 +44,42 @@ export default function App() {
     };
   }, [measureHeight]);
 
-  // Window resize -> re-measure
   useEffect(() => {
     window.addEventListener("resize", measureHeight);
     return () => window.removeEventListener("resize", measureHeight);
   }, [measureHeight]);
 
-  // Observe content changes (validation messages, async content, etc.)
   useEffect(() => {
-    // Guard for environments without ResizeObserver
     if (typeof ResizeObserver === "undefined") return;
-
     const ro = new ResizeObserver(() => {
-      // Always measure whichever form is active (keeps height in sync)
       measureHeight();
     });
     if (loginContentRef.current) ro.observe(loginContentRef.current);
     if (registerContentRef.current) ro.observe(registerContentRef.current);
-
     return () => ro.disconnect();
   }, [measureHeight]);
 
   return (
-    <div className="container m-auto px-4 pt-[80px]">
-      <section className="w-full m-auto border !border-neutral-500 max-w-xl rounded-2xl">
+    <div className="container px-4 pt-[80px]">
+      <section className="w-full m-auto border max-w-xl rounded-2xl">
         {/* Header / tab buttons */}
         <header className="form-header">
-          <div
-            className="inline-flex w-full"
-            role="tablist"
-            aria-label="Auth forms"
-          >
+          {/* changed inline-flex -> flex so buttons distribute well */}
+          <div className="flex w-full" role="tablist" aria-label="Auth forms">
             <button
               type="button"
               role="tab"
               aria-pressed={!isRegister}
               onClick={() => setIsRegister(false)}
-              className={`inline-block flex-1 relative overflow-hidden rounded-xl px-6 pb-[6px] pt-2 text-lg font-medium uppercase leading-normal transition duration-150 ease-in-out
-                ${
-                  !isRegister
-                    ? "border-b-2 !border-r-2 !border-black bg-white text-neutral-900"
-                    : "border-b border-transparent text-neutral-500"
-                }
-              `}
               data-twe-ripple-init
               data-twe-ripple-color="dark"
+              className={`flex-1 w-full relative overflow-hidden rounded-xl px-6 pb-[6px] pt-2 text-lg font-medium uppercase leading-normal transition duration-150 ease-in-out box-border
+                border-b-[3px] border-r-[3px]
+                ${
+                  !isRegister
+                    ? "!border-black !border-r-2 !border-b-2 bg-white text-neutral-900"
+                    : "border-transparent text-neutral-500"
+                }`}
             >
               Login
             </button>
@@ -102,15 +89,15 @@ export default function App() {
               role="tab"
               aria-pressed={isRegister}
               onClick={() => setIsRegister(true)}
-              className={`inline-block flex-1 relative overflow-hidden rounded-xl px-6 pb-[6px] pt-2 text-lg font-medium uppercase leading-normal transition duration-150 ease-in-out
-                ${
-                  isRegister
-                    ? "border-b-2 !border-r-2 !border-black bg-white text-neutral-900"
-                    : "border-b border-transparent text-neutral-500"
-                }
-              `}
               data-twe-ripple-init
               data-twe-ripple-color="dark"
+              className={`flex-1 w-full relative overflow-hidden rounded-xl px-6 pb-[6px] pt-2 text-lg font-medium uppercase leading-normal transition duration-150 ease-in-out box-border
+                border-b-[3px] border-r-[3px]
+                ${
+                  isRegister
+                    ? "!border-black !border-r-2 !border-b-2 bg-white text-neutral-900"
+                    : "border-transparent text-neutral-500"
+                }`}
             >
               Register
             </button>
@@ -118,14 +105,12 @@ export default function App() {
         </header>
 
         {/* Card body */}
-        {/* keep overflow-hidden here to hide the off-screen form during horizontal slide */}
         <div className="card-body relative overflow-hidden px-0">
-          {/* This wrapper gets a controlled height (px). Animate height only. */}
           <div
             className="relative transition-[height] duration-300 ease-in-out"
             style={{ height: `${height}px` }}
           >
-            {/* Login form (outer form kept absolute to allow sliding) */}
+            {/* Login form */}
             <form
               id="login"
               className={`absolute inset-0 duration-300 ease-in-out
@@ -137,7 +122,6 @@ export default function App() {
               `}
               aria-hidden={isRegister}
             >
-              {/* measure this inner box */}
               <div ref={loginContentRef} className="p-10">
                 <InputField
                   type="text"
@@ -153,7 +137,7 @@ export default function App() {
                 />
                 <button
                   type="button"
-                  className="block text-right pb-[5px] ms-auto text-sm text-neutral-500"
+                  className="block text-right pb-[5px] ms-auto text-sm text-neutral-500 hover:text-black"
                 >
                   Forgot Password?
                 </button>
@@ -173,7 +157,6 @@ export default function App() {
               `}
               aria-hidden={!isRegister}
             >
-              {/* measure this inner box */}
               <div ref={registerContentRef} className="p-10">
                 <InputField
                   type="text"

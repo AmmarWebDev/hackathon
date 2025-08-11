@@ -19,3 +19,8 @@
   /* Variables */
   --bg-color: #fff;
 }
+
+.container {
+  margin: auto;
+  padding: 0;
+}
